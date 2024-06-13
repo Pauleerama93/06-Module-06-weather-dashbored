@@ -1,20 +1,27 @@
+// Array to store search history
 let searchHistoryForWeather= [];
+// Base URL for the OpenWeather API
 const weatherAPIBaseURL = "https://api.openweathermap.org";
+// Your unique API key for the OpenWeather API
 const weatherAPIKey = "4fe3d3b024d404c3b18ecaabe58ca285";
 
+// Selecting HTML elements to interact with
 const searchForm = document.querySelector("#search-form");
 const searchInput = document.querySelector("#search-input");
 const todayContainer = document.querySelector("#today");
 const forecastContainer = document.querySelector("#forecast");
 const weatherHistoryContainer = document.querySelector("#weather-history");
 
+// Function to create search history buttons dynamically
 const createSearchHistory = () => {
+     // Clear the container before adding new buttons
     weatherHistoryContainer.innerHTML = "";
+     // Loop through the search history array and create buttons for each city
     for(let index = 0; index < searchHistoryForWeather.length; index++) {
         const buttonElement = document.createElement("button");
         buttonElement.setAttribute("id", "city-button");
         buttonElement.setAttribute("type", "button");
-        buttonElement.setAttribute("class", "btn btn-secondary");
+        buttonElement.setAttribute("class", "btn btn-secondary bg-primary");
         buttonElement.setAttribute("aria-controls", "today forecast");
         buttonElement.classList.add("history-button")
         buttonElement.setAttribute("data-search", searchHistoryForWeather[index]);
@@ -22,16 +29,21 @@ const createSearchHistory = () => {
         weatherHistoryContainer.append(buttonElement);
     }
 }
+// Function to append a new city to the search history
 const appendWeatherHistory = (search) => {
+    // Check if the city is already in the search history
     if(searchHistoryForWeather.indexOf(search) !== -1) {
         return;
     }
+    // Add the new city to the search history array
     searchHistoryForWeather.push(search);
+    // Save the updated search history to localStorage
     localStorage.setItem("weatherHistory", JSON.stringify(searchHistoryForWeather));
+    // Re-create the search history buttons
     createSearchHistory();
 }
 
-
+// Function to fetch the geographical coordinates (latitude and longitude) for a city
 const fetchCoordinates = (search) => {
     //break down of fetching
     //URL(base) ---> endpoint ; Parameters --> query string ; fetch -> GET : 
@@ -63,6 +75,7 @@ const fetchCoordinates = (search) => {
         if(!data[0]){
             alert("City not found");
         } else {
+            // Append the city to search history and fetch weather data
             appendWeatherHistory(search);
             fetchWeather(data[0])
         } 
@@ -72,7 +85,9 @@ const fetchCoordinates = (search) => {
     });
     
 }
+// Function to display the current weather for a city
 const displayCurrentWeather = (city, weatherData) => {
+     // Format the current date
     const date = dayjs().format("M/D/YYYY");
     const tempF = weatherData.main.temp;
     const windMph = weatherData.wind.speed;
@@ -84,8 +99,8 @@ const displayCurrentWeather = (city, weatherData) => {
     console.log(date, tempF);
     console.log(iconUrl);
     console.log(humidity);
-    //making a card
-    
+ 
+     // Create HTML elements to display the weather data   
     const card = document.createElement("div");
     const cardBody = document.createElement("div");
     const heading = document.createElement("h3");
@@ -94,7 +109,8 @@ const displayCurrentWeather = (city, weatherData) => {
     const windElement = document.createElement("p");
     const humidityElement = document.createElement("p");
 
-    card.setAttribute("class", "card bg-light mb-3");
+    // Set attributes and content for the elements
+    card.setAttribute("class", "card bg-primary text-light mb-3");
     cardBody.setAttribute("class", "card-body");
     card.append(cardBody);
 
@@ -112,10 +128,11 @@ const displayCurrentWeather = (city, weatherData) => {
     windElement.textContent = `Wind 🪁: ${windMph} MPH`;
     cardBody.append(heading, temperatureElement, humidityElement, windElement);
 
+    // Clear the container and append the new weather card
     todayContainer.innerHTML = "";
     todayContainer.append(card);
 }
-
+// Function to create a forecast card for a specific day
 const createForecastCard = (forecastData) => {
     const iconUrl = `http://openweathermap.org/img/w/${forecastData.weather[0].icon}.png`;
     const iconDescription = forecastData.weather[0].description || "No description";
@@ -136,6 +153,7 @@ const createForecastCard = (forecastData) => {
     card.append(cardBody);
     cardBody.append(cardTitle, temperatureElement, windElement, humidityElement);
 
+    // Set attributes and content for the elements
     column.setAttribute("class", "col-md");
     column.classList.add("five-day-card");
     card.setAttribute("class", "card bg-primary text-white");
@@ -152,14 +170,17 @@ const createForecastCard = (forecastData) => {
     windElement.textContent = `Wind 🪁: ${wind} MPH`;
     humidityElement.textContent = `Humidity 🌧️: ${humidity} %`
 
+    // Append the forecast card to the forecast container
     forecastContainer.append(column);
 }
 
-
+// Function to display the 5-day weather forecast
 const displayForecast = (weatherData) => {
+    // Calculate the start and end dates for the forecast
     const startDate = dayjs().add(1, "day").startOf("day").unix();
     const endDate = dayjs().add(6, "day").startOf("day").unix();
 
+    // Create and append the heading for the forecast
     const headingColumn = document.createElement("div");
     const heading = document.createElement("h3");
     headingColumn.setAttribute("class", "col-12");
@@ -168,7 +189,7 @@ const displayForecast = (weatherData) => {
 
     forecastContainer.innerHTML = "";
     forecastContainer.append(headingColumn);
-
+    // Loop through the weather data and create forecast cards for each day
     for(let index = 0; index < weatherData.length; index++){
         if(weatherData[index].dt >= startDate && weatherData[index].dt < endDate ){
             if(weatherData[index].dt_txt.slice(11,13) === "12"){
@@ -178,12 +199,12 @@ const displayForecast = (weatherData) => {
     }
 }
 
-
+// Function to fetch the weather data for a specific location
 const fetchWeather = (location) => {
     const latitude = location.lat;
     const longitude = location.lon;
-
     const city = location.name;
+
 //Engineering this link to fit: https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={API key}
 //Already have the base(weatherAPIBaseURL): https://api.openweathermap.org
 //query per: data/2.5/forecast?
@@ -198,6 +219,7 @@ const fetchWeather = (location) => {
     }).then(function(data){
         //logging data at this point to get the right info
         console.log(data)
+        // Display the current weather and the forecast
         displayCurrentWeather(city, data.list[0])
         displayForecast(data.list);
     }).catch(function(error){
@@ -205,6 +227,7 @@ const fetchWeather = (location) => {
     });
 }
 
+// Function to handle the search form submission
 const handleSearchFormSubmit = (event) => {
     event.preventDefault();
 
@@ -215,6 +238,7 @@ const handleSearchFormSubmit = (event) => {
     searchInput.value="";
 }
 
+// Function to initialize the search
 const initializeSeachHistory = () => {
     const storedWeatherHistory = JSON.parse(localStorage.getItem("weatherHistory"))
     if(storedWeatherHistory){
@@ -223,21 +247,26 @@ const initializeSeachHistory = () => {
     createSearchHistory();
 }
 
+// Function to handle clicks on the search history buttons
 const handleSearchHistoryClick = (event) => {
     console.log(event.target)
+    // If the clicked element is not a history button, exit the function
     if(!event.target.matches(".history-button")){
         return;
     }
 
+    // Get the clicked button element
     const buttonElement = event.target;
-
+    // Get the search term from the button's data attribute
     const search = buttonElement.getAttribute("data-search")
+    // Fetch coordinates for the selected city
     fetchCoordinates(search);
 }
 
 
-//Events
+// Initialize the search history when the page loads
 initializeSeachHistory()
-//Ref line 5 
+// Add an event listener to the search form for submitting new searches Ref line 5 
 searchForm.addEventListener("submit", handleSearchFormSubmit);
+// Add an event listener to the weather history container for handling clicks on history buttons
 weatherHistoryContainer.addEventListener("click", handleSearchHistoryClick);
